@@ -41,6 +41,7 @@ public class GameManager : MonoBehaviour
     {
         m_NumRoundsToWin = rounds;
         buttons.SetActive(false);
+        // Reset text
         roundsSelectionText.text = "";
         timerText.text = "";
         SpawnAllTanks();
