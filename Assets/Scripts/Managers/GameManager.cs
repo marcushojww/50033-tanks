@@ -8,15 +8,21 @@ using UnityEngine.UI;
 
 public class GameManager : MonoBehaviour
 {
-    public int m_NumRoundsToWin = 5;            
+    public int m_NumRoundsToWin;  
+    public bool roundsSet = false;          
     public float m_StartDelay = 3f;             
     public float m_EndDelay = 3f;               
     public CameraControl m_CameraControl;       
-    public Text m_MessageText;                  
+    public Text m_MessageText;                 
     public GameObject[] m_TankPrefabs;
     public TankManager[] m_Tanks;               
     public List<Transform> wayPointsForAI;
-
+    public Text score;
+    public Text timerText;
+    public Text roundsSelectionText;
+    public GameObject buttons;
+    public float timer = 30.0f;
+    private bool timeout;
     private int m_RoundNumber;                  
     private WaitForSeconds m_StartWait;         
     private WaitForSeconds m_EndWait;           
@@ -28,10 +34,17 @@ public class GameManager : MonoBehaviour
     {
         m_StartWait = new WaitForSeconds(m_StartDelay);
         m_EndWait = new WaitForSeconds(m_EndDelay);
+        timeout = false;
+    }
 
+    public void SetRounds(int rounds)
+    {
+        m_NumRoundsToWin = rounds;
+        buttons.SetActive(false);
+        roundsSelectionText.text = "";
+        timerText.text = "";
         SpawnAllTanks();
         SetCameraTargets();
-
         StartCoroutine(GameLoop());
     }
 
@@ -84,8 +97,29 @@ public class GameManager : MonoBehaviour
 
         m_RoundNumber++;
         m_MessageText.text = $"ROUND {m_RoundNumber}";
+        // score.text = "Score: 0";
 
         yield return m_StartWait;
+    }
+
+    IEnumerator StartTimer()
+    {
+        for (int i = 0; i < timer; i++) {
+
+            if (m_RoundWinner == null) {
+                timerText.text = $"{timer - i - 1}";
+                yield return new WaitForSeconds(1.0f);
+            } else {
+                break;
+            }
+        }
+
+        if (m_RoundWinner == null) {
+            timeout = true;
+        }
+        yield return null;
+
+        
     }
 
 
@@ -93,9 +127,13 @@ public class GameManager : MonoBehaviour
     {
         EnableTankControl();
 
+        m_RoundWinner = null;
+
         m_MessageText.text = string.Empty;
 
-        while (!OneTankLeft()) yield return null;
+        StartCoroutine(StartTimer());
+
+        while (!OneTankLeft() && !timeout) yield return null;
     }
 
 
@@ -106,12 +144,22 @@ public class GameManager : MonoBehaviour
         m_RoundWinner = null;
 
         m_RoundWinner = GetRoundWinner();
-        if (m_RoundWinner != null) m_RoundWinner.m_Wins++;
+        if (m_RoundWinner != null) 
+        {
+            m_RoundWinner.m_Wins++;
+            // If player won the round, add score
+            // if (m_RoundWinner.m_PlayerNumber == 1) {
+            //     score.text = "Score: " + m_RoundWinner.m_Wins;
+            // }
+        }
 
         m_GameWinner = GetGameWinner();
 
         string message = EndMessage();
+
         m_MessageText.text = message;
+
+        timeout = false;
 
         yield return m_EndWait;
     }
@@ -131,10 +179,13 @@ public class GameManager : MonoBehaviour
 
     private TankManager GetRoundWinner()
     {
-        for (int i = 0; i < m_Tanks.Length; i++)
-        {
-            if (m_Tanks[i].m_Instance.activeSelf)
-                return m_Tanks[i];
+        if (!timeout) {
+
+            for (int i = 0; i < m_Tanks.Length; i++)
+            {
+                if (m_Tanks[i].m_Instance.activeSelf)
+                    return m_Tanks[i];
+            }
         }
 
         return null;
@@ -142,10 +193,12 @@ public class GameManager : MonoBehaviour
 
     private TankManager GetGameWinner()
     {
-        for (int i = 0; i < m_Tanks.Length; i++)
-        {
-            if (m_Tanks[i].m_Wins == m_NumRoundsToWin)
-                return m_Tanks[i];
+        if (!timeout) {
+            for (int i = 0; i < m_Tanks.Length; i++)
+            {
+                if (m_Tanks[i].m_Wins == m_NumRoundsToWin)
+                    return m_Tanks[i];
+            }
         }
 
         return null;
@@ -159,7 +212,7 @@ public class GameManager : MonoBehaviour
         if (m_RoundWinner != null) sb.Append($"{m_RoundWinner.m_ColoredPlayerText} WINS THE ROUND!");
         else sb.Append("DRAW!");
 
-        sb.Append("\n\n\n\n");
+        sb.Append("\n\n");
 
         for (int i = 0; i < m_Tanks.Length; i++)
         {

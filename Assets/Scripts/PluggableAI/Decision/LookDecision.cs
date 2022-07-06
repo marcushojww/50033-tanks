@@ -3,6 +3,7 @@
 [CreateAssetMenu(menuName = "PluggableAI/Decisions/Look")]
 public class LookDecision : Decision
 {
+    public bool isChasing;
 
     public override bool Decide(StateController controller)
     {

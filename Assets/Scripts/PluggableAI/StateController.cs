@@ -9,6 +9,7 @@ public class StateController : MonoBehaviour {
 	public EnemyStats enemyStats;
 	public Transform eyes;
 	public State remainState;
+	public GameObject chaseAlert;
 
 	[HideInInspector] public NavMeshAgent navMeshAgent;
 	[HideInInspector] public TankShooting tankShooting;
@@ -24,6 +25,7 @@ public class StateController : MonoBehaviour {
 	{
 		tankShooting = GetComponent<TankShooting> ();
 		navMeshAgent = GetComponent<NavMeshAgent> ();
+		chaseAlert.SetActive(false);
 	}
 
 	public void SetupAI(bool aiActivationFromTankManager, List<Transform> wayPointsFromTankManager)
@@ -42,6 +44,12 @@ public class StateController : MonoBehaviour {
 	public void TransitionToState(State nextState)
 	{
 		if (nextState == remainState) return;
+		if (nextState.ToString() == "ChaseScanner (State)" || nextState.ToString() == "ChaseChaser (State)"){
+			chaseAlert.SetActive(true);
+		} else {
+			chaseAlert.SetActive(false);
+		}
+		
 		currentState = nextState;
 		OnExitState();
 	}
@@ -55,7 +63,6 @@ public class StateController : MonoBehaviour {
 	void Update()
 	{
 		if (!aiActive) return;
-
 		currentState.UpdateState(this);
 	}
 
